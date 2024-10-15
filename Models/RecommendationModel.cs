@@ -1,21 +1,27 @@
 using Microsoft.ML;
 using Microsoft.ML.Data;
 using Microsoft.ML.Trainers;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RecommendationSystem.Models
 {
     public class RecommendationModel
     {
-        private MLContext _mlContext;
+        private readonly MLContext _mlContext;
         private ITransformer _model;
+        private readonly AppDbContext _dbContext;
 
-        public RecommendationModel()
+        public RecommendationModel(AppDbContext dbContext)
         {
             _mlContext = new MLContext();
+            _dbContext = dbContext;
         }
 
-        public void TrainModel(IEnumerable<Interaction> trainingData)
+        public async Task TrainModelAsync()
         {
+            var trainingData = await _dbContext.Interactions.ToListAsync();
             var trainData = _mlContext.Data.LoadFromEnumerable(trainingData.Select(i => new MovieRating
             {
                 userId = (uint)i.UserId,
@@ -36,9 +42,14 @@ namespace RecommendationSystem.Models
             _model = trainer.Fit(trainData);
         }
 
-        public IEnumerable<(int itemId, float score)> GetRecommendations(int userId, int count)
+        public async Task<IEnumerable<(int itemId, float score)>> GetRecommendationsAsync(int userId, int count)
         {
-            var allItems = Enumerable.Range(1, 1000); // Assume we have 1000 items
+            if (_model == null)
+            {
+                await TrainModelAsync();
+            }
+
+            var allItems = await _dbContext.Items.Select(i => i.Id).ToListAsync();
             var predictionEngine = _mlContext.Model.CreatePredictionEngine<MovieRating, MovieRatingPrediction>(_model);
 
             return allItems

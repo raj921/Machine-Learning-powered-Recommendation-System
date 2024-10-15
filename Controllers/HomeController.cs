@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using RecommendationSystem.Data;
 using RecommendationSystem.Models;
 using System.Diagnostics;
 
@@ -7,14 +9,24 @@ namespace RecommendationSystem.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly AppDbContext _dbContext;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, AppDbContext dbContext)
         {
             _logger = logger;
+            _dbContext = dbContext;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            var userCount = await _dbContext.Users.CountAsync();
+            var itemCount = await _dbContext.Items.CountAsync();
+            var interactionCount = await _dbContext.Interactions.CountAsync();
+
+            ViewData["UserCount"] = userCount;
+            ViewData["ItemCount"] = itemCount;
+            ViewData["InteractionCount"] = interactionCount;
+
             return View();
         }
 

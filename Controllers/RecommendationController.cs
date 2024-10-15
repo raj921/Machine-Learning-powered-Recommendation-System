@@ -15,10 +15,17 @@ namespace RecommendationSystem.Controllers
         }
 
         [HttpGet("{userId}")]
-        public IActionResult GetRecommendations(int userId, [FromQuery] int count = 5)
+        public async Task<IActionResult> GetRecommendations(int userId, [FromQuery] int count = 5)
         {
-            var recommendations = _model.GetRecommendations(userId, count);
+            var recommendations = await _model.GetRecommendationsAsync(userId, count);
             return Ok(recommendations);
+        }
+
+        [HttpPost("train")]
+        public async Task<IActionResult> TrainModel()
+        {
+            await _model.TrainModelAsync();
+            return Ok("Model trained successfully");
         }
     }
 }
